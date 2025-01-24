@@ -1,0 +1,88 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+
+void scan_port(const char *ip, int port) {
+    struct sockaddr_in target;
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock < 0) {
+        perror("Socket creation failed");
+        return;
+    }
+
+    target.sin_family = AF_INET;
+    target.sin_port = htons(port);
+    inet_pton(AF_INET, ip, &target.sin_addr);
+
+    if (connect(sock, (struct sockaddr *)&target, sizeof(target)) == 0) {
+        printf("Port %d: Open\n", port);
+    } else {
+        printf("Port %d: Closed\n", port);
+    }
+
+    close(sock);
+}
+
+void scan_range(const char *ip, int start_port, int end_port) {
+    for (int port = start_port; port <= end_port; port++) {
+        scan_port(ip, port);
+    }
+}
+
+void scan_multiple(const char *ip, const int ports[], int count) {
+    for (int i = 0; i < count; i++) {
+        scan_port(ip, ports[i]);
+    }
+}
+
+int main() {
+    char ip[16];
+    int choice;
+
+    printf("Enter target IP address: ");
+    scanf("%s", ip);
+
+    printf("Choose scan type:\n");
+    printf("1. Scan all ports (1-65535)\n");
+    printf("2. Scan a specific range of ports\n");
+    printf("3. Scan specific ports\n");
+    printf("Enter your choice: ");
+    scanf("%d", &choice);
+
+    if (choice == 1) {
+        printf("Scanning all ports (1-65535)...\n");
+        scan_range(ip, 1, 65535);
+    } else if (choice == 2) {
+        int start_port, end_port;
+        printf("Enter start port: ");
+        scanf("%d", &start_port);
+        printf("Enter end port: ");
+        scanf("%d", &end_port);
+
+        if (start_port > 0 && end_port <= 65535 && start_port <= end_port) {
+            printf("Scanning ports %d to %d...\n", start_port, end_port);
+            scan_range(ip, start_port, end_port);
+        } else {
+            printf("Invalid port range!\n");
+        }
+    } else if (choice == 3) {
+        int count;
+        printf("Enter the number of ports to scan: ");
+        scanf("%d", &count);
+        int ports[count];
+        printf("Enter the ports:\n");
+        for (int i = 0; i < count; i++) {
+            printf("Port %d: ", i + 1);
+            scanf("%d", &ports[i]);
+        }
+        printf("Scanning specified ports...\n");
+        scan_multiple(ip, ports, count);
+    } else {
+        printf("Invalid choice!\n");
+    }
+
+    return 0;
+}
+                                                     
